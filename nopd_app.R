@@ -7,6 +7,7 @@
 library(RSocrata)
 suppressPackageStartupMessages(library(dplyr))
 library(stringr)
+library(tidyr)
 
 # Load csv files using URL
 policereport2021 <- read.csv("https://data.nola.gov/api/views/6pqh-bfxa/rows.csv?accessType=DOWNLOAD")
@@ -68,6 +69,40 @@ pr2021_socrata %>%
   unique() ->
   offender_nums
 
+pr2021_socrata %>%
+  select(item_number, offenderid, offenderstatus) %>%
+  filter(offenderstatus == "ARRESTED") %>%
+  unique() %>%
+  count(item_number, offenderstatus) %>%
+  select(-offenderstatus) %>%
+  rename(n_arrested = n) ->
+  num_arrests
+
+pr2021_socrata <- merge(pr2021_socrata, victim_nums, all = TRUE)
+pr2021_socrata <- merge(pr2021_socrata, offender_nums, all = TRUE)
+pr2021_socrata <- merge(pr2021_socrata, num_arrests, all = TRUE)
+
+pr2021_socrata %>%
+  replace_na(list(n_victims = 0, n_offenders = 0, n_arrested = 0)) ->
+  pr2021_socrata
+
 crime_info <- pr2021_socrata %>%
-  select(item_number, district, location, disposition, signal_type, signal_type_category, signal_description, occurred_date_time)
+  select(item_number,
+         district,
+         location,
+         disposition,
+         signal_type,
+         signal_type_category,
+         signal_description,
+         occurred_date_time,
+         n_victims,
+         n_offenders,
+         n_arrested,
+         hate_crime) %>%
+  mutate(arrest_made = ifelse(n_arrested >= 1, T, F)) %>%
+  unique()
+
+signal_info <- pr2021_socrata %>%
+  select(signal_type, signal_description) %>%
+  unique()
 
