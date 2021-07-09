@@ -8,6 +8,7 @@ library(RSocrata)
 suppressPackageStartupMessages(library(dplyr))
 library(stringr)
 library(tidyr)
+library(rgdal)
 
 # Load csv files using URL
 policereport2021 <- read.csv("https://data.nola.gov/api/views/6pqh-bfxa/rows.csv?accessType=DOWNLOAD")
@@ -28,7 +29,6 @@ policereport2010 <- read.csv("https://data.nola.gov/api/views/s25y-s63t/rows.csv
 
 # Load files using RSocrata
 pr2021_socrata <- read.socrata("https://data.nola.gov/resource/6pqh-bfxa.json")
-nopd_districts <- read.socrata("https://data.nola.gov/resource/6fjz-7kjs.json")
 
 '
 policereport2020 <- read.socrata("https://data.nola.gov/resource/hjbe-qzaz.json")
@@ -43,6 +43,10 @@ policereport2012 <- read.socrata("https://data.nola.gov/resource/x7yt-gfg9.json"
 policereport2011 <- read.socrata("https://data.nola.gov/resource/t596-ginn.json")
 policereport2010 <- read.socrata("https://data.nola.gov/resource/s25y-s63t.json")
 '
+
+# Geo data
+nopd_districts <- read.socrata("https://data.nola.gov/resource/6fjz-7kjs.json")
+road_centerlines <- rgdal::readOGR("https://opendata.arcgis.com/datasets/bf8f32f8203247b9a6d982e145e5c3da_2.geojson")
 
 
 # 1. Data cleaning
@@ -105,4 +109,13 @@ crime_info <- pr2021_socrata %>%
 signal_info <- pr2021_socrata %>%
   select(signal_type, signal_description) %>%
   unique()
+
+signal_type_category_map <- crime_info %>%
+  select(item_number, signal_type_category) %>%
+  merge(y = signal_info, all.x = TRUE, by.x = "signal_type_category", by.y = "signal_type")
+
+no_overall_signal_desc <- signal_type_category_map %>%
+  select(signal_type_category, signal_description) %>%
+  unique() %>%
+  filter(is.na(signal_description))
 
