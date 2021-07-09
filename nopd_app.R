@@ -3,12 +3,21 @@
 
 # 0. Load packages & data
 
+# Issue loading sf & rgdal resolved in GitHub thread: https://github.com/r-spatial/sf/issues/1536
+#
+# install.packages("rgeos", repos="http://R-Forge.R-project.org", type="source")
+# install.packages("rgdal", repos="http://R-Forge.R-project.org", type="source")
+# library(devtools)
+# install_github("r-spatial/sf", configure.args = "--with-proj-lib=/usr/local/lib/")
+
 # install.packages("RSocrata")
 library(RSocrata)
 suppressPackageStartupMessages(library(dplyr))
 library(stringr)
 library(tidyr)
-library(rgdal)
+suppressPackageStartupMessages(library(rgdal))
+suppressPackageStartupMessages(library(sf))
+library(httr)
 
 # Load csv files using URL
 policereport2021 <- read.csv("https://data.nola.gov/api/views/6pqh-bfxa/rows.csv?accessType=DOWNLOAD")
@@ -44,9 +53,27 @@ policereport2011 <- read.socrata("https://data.nola.gov/resource/t596-ginn.json"
 policereport2010 <- read.socrata("https://data.nola.gov/resource/s25y-s63t.json")
 '
 
+nopd_uof <- read.socrata("https://data.nola.gov/resource/9mnw-mbde.json")
+
+nopd_stopsearch <- read.socrata("https://data.nola.gov/resource/kitu-f4uy.json")
+
 # Geo data
 nopd_districts <- read.socrata("https://data.nola.gov/resource/6fjz-7kjs.json")
-road_centerlines <- rgdal::readOGR("https://opendata.arcgis.com/datasets/bf8f32f8203247b9a6d982e145e5c3da_2.geojson")
+
+url_prefix <- parse_url("https://opendata.arcgis.com/datasets")
+url <- url_prefix
+url$path <- paste(url$path,
+                  "bf8f32f8203247b9a6d982e145e5c3da_0.geojson",
+                  sep = "/")
+request <- build_url(url)
+road_centerlines <- st_read(request)
+
+url <- url_prefix
+url$path <- paste(url$path,
+                  "bf8f32f8203247b9a6d982e145e5c3da_2.geojson",
+                  sep = "/")
+request <- build_url(url)
+alias_st_name <- st_read(request)
 
 
 # 1. Data cleaning
