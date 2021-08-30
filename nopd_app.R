@@ -172,7 +172,7 @@ crime_info %>%
 
 
 
-crime_info2 %>%
+crime_info %>%
   select(street_suffix) %>%
   unique() # Ave, Hwy; Jr, Law, Lee, Ann, Eve, Lis, End, In, Ex
 
